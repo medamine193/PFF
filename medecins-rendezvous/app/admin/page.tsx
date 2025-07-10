@@ -34,7 +34,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <Sidebar userType="admin" />
+      <Sidebar  />
 
       <div className="flex-1 ml-[70px] md:ml-64">
         <div className="container mx-auto p-4 space-y-6">

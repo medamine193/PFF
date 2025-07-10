@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
+import { jwtDecode } from "jwt-decode"
 import {
   Calendar,
   ChevronLeft,
@@ -21,70 +22,78 @@ import {
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-type SidebarProps = {
-  userType: "patient" | "doctor" | "admin"
+type JwtPayload = {
+  email?: string
+  role?: "patient" | "doctor" | "admin"
+  sub?: string
+  name?: string
 }
 
-export default function Sidebar({ userType }: SidebarProps) {
+export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [userData, setUserData] = useState<JwtPayload | null>(null)
   const pathname = usePathname()
+  const router = useRouter()
 
-  const patientLinks = [
-    { href: "/patient/dashboard", label: "Tableau de bord", icon: Home },
-    { href: "/patient/appointments", label: "Mes rendez-vous", icon: Calendar },
-    { href: "/patient/book", label: "Prendre rendez-vous", icon: Clock },
-    { href: "/patient/chat", label: "Messagerie", icon: MessageSquare },
-    { href: "/patient/profile", label: "Mon profil", icon: User },
-  ]
+  useEffect(() => {
+    const token = localStorage.getItem("token")
+    if (!token) {
+      router.replace("/login")
+      return
+    }
 
-  const doctorLinks = [
-    { href: "/doctor/dashboard", label: "Tableau de bord", icon: Home },
-    { href: "/doctor/appointments", label: "Consultations", icon: Calendar },
-    { href: "/doctor/chat", label: "Messagerie", icon: MessageSquare },
-    { href: "/doctor/feedback", label: "Avis patients", icon: Star },
-    { href: "/doctor/profile/edit", label: "Mon profil", icon: User },
-  ]
+    try {
+      const decoded = jwtDecode<JwtPayload>(token)
+      setUserData(decoded)
+    } catch (err) {
+      console.error("Invalid token")
+      router.replace("/login")
+    }
+  }, [router])
 
-  const adminLinks = [
-    { href: "/admin", label: "Tableau de bord", icon: Home },
-    { href: "/admin/doctors", label: "Médecins", icon: Users },
-    { href: "/admin/patients", label: "Patients", icon: Users },
-    { href: "/admin/appointments", label: "Rendez-vous", icon: Calendar },
-    { href: "/admin/specializations", label: "Spécialités", icon: Star },
-    { href: "/admin/settings", label: "Paramètres", icon: Settings },
-  ]
+  const userType = userData?.role || "patient"
 
-  const links = userType === "patient" ? patientLinks : userType === "doctor" ? doctorLinks : adminLinks
+  const links =
+    userType === "patient"
+      ? [
+          { href: "/patient/dashboard", label: "Tableau de bord", icon: Home },
+          { href: "/patient/appointments", label: "Mes rendez-vous", icon: Calendar },
+          { href: "/patient/book", label: "Prendre rendez-vous", icon: Clock },
+          { href: "/patient/chat", label: "Messagerie", icon: MessageSquare },
+          { href: "/patient/profile", label: "Mon profil", icon: User },
+        ]
+      : userType === "doctor"
+      ? [
+          { href: "/doctor/dashboard", label: "Tableau de bord", icon: Home },
+          { href: "/doctor/appointments", label: "Consultations", icon: Calendar },
+          { href: "/doctor/chat", label: "Messagerie", icon: MessageSquare },
+          { href: "/doctor/feedback", label: "Avis patients", icon: Star },
+          { href: "/doctor/profile/edit", label: "Mon profil", icon: User },
+        ]
+      : [
+          { href: "/admin", label: "Tableau de bord", icon: Home },
+          { href: "/admin/doctors", label: "Médecins", icon: Users },
+          { href: "/admin/patients", label: "Patients", icon: Users },
+          { href: "/admin/appointments", label: "Rendez-vous", icon: Calendar },
+          { href: "/admin/specializations", label: "Spécialités", icon: Star },
+          { href: "/admin/settings", label: "Paramètres", icon: Settings },
+        ]
 
-  const userInfo = {
-    name: userType === "patient" ? "Jean Dupont" : userType === "doctor" ? "Dr. Marie Laurent" : "Admin",
-    email:
-      userType === "patient"
-        ? "jean.dupont@example.com"
-        : userType === "doctor"
-          ? "dr.marie@example.com"
-          : "admin@example.com",
-    image: "/placeholder.svg?height=40&width=40",
+  const handleLogout = () => {
+    localStorage.removeItem("token")
+    router.push("/login")
   }
 
   return (
     <>
-      {/* Mobile sidebar toggle */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="fixed top-4 left-4 z-50 md:hidden"
-        onClick={() => setMobileOpen(true)}
-      >
+      <Button variant="ghost" size="icon" className="fixed top-4 left-4 z-50 md:hidden" onClick={() => setMobileOpen(true)}>
         <Menu className="h-6 w-6" />
         <span className="sr-only">Toggle sidebar</span>
       </Button>
 
-      {/* Mobile sidebar overlay */}
       {mobileOpen && <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setMobileOpen(false)} />}
 
-      {/* Sidebar */}
       <aside
         className={cn(
           "fixed top-0 left-0 z-50 h-full bg-white border-r border-gray-200 transition-all duration-300 ease-in-out",
@@ -93,52 +102,41 @@ export default function Sidebar({ userType }: SidebarProps) {
         )}
       >
         <div className="flex flex-col h-full">
-          {/* Sidebar header */}
           <div className="flex items-center justify-between p-4 border-b">
             {!collapsed && (
               <div className="flex items-center">
                 <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold mr-2">
-                  {userType === "patient" ? "P" : userType === "doctor" ? "D" : "A"}
+                  {userType.charAt(0).toUpperCase()}
                 </div>
                 <span className="font-semibold">Médecins Rendez-vous</span>
               </div>
             )}
-
             <div className="flex items-center">
               <Button variant="ghost" size="icon" className="md:flex hidden" onClick={() => setCollapsed(!collapsed)}>
                 {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
               </Button>
-
               <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileOpen(false)}>
                 <X className="h-5 w-5" />
               </Button>
             </div>
           </div>
 
-          {/* User info */}
           <div className={cn("flex items-center p-4 border-b", collapsed ? "justify-center" : "justify-start")}>
             <div className="w-8 h-8 rounded-full overflow-hidden">
-              <img
-                src={userInfo.image || "/placeholder.svg"}
-                alt={userInfo.name}
-                className="w-full h-full object-cover"
-              />
+              <img src="/placeholder.svg" alt="User" className="w-full h-full object-cover" />
             </div>
-
             {!collapsed && (
               <div className="ml-3 overflow-hidden">
-                <p className="font-medium text-sm truncate">{userInfo.name}</p>
-                <p className="text-xs text-muted-foreground truncate">{userInfo.email}</p>
+                <p className="font-medium text-sm truncate">{userData?.name || "Utilisateur"}</p>
+                <p className="text-xs text-muted-foreground truncate">{userData?.email}</p>
               </div>
             )}
           </div>
 
-          {/* Navigation links */}
           <nav className="flex-1 overflow-y-auto py-4">
             <ul className="space-y-1 px-2">
               {links.map((link) => {
                 const isActive = pathname === link.href
-
                 return (
                   <li key={link.href}>
                     <Link
@@ -158,9 +156,9 @@ export default function Sidebar({ userType }: SidebarProps) {
             </ul>
           </nav>
 
-          {/* Logout button */}
           <div className="p-4 border-t">
             <Button
+              onClick={handleLogout}
               variant="ghost"
               className={cn(
                 "w-full flex items-center text-red-600 hover:bg-red-50 hover:text-red-700",

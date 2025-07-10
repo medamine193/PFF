@@ -1,4 +1,4 @@
-'use client'
+"use client"
 
 import React, { useEffect, useState } from "react"
 import { jwtDecode } from "jwt-decode"
@@ -131,7 +131,7 @@ export default function PatientProfilePage() {
         })
 
         if (!res.ok) {
-          throw new Error("Erreur lors de la récupération du profil")
+          throw new Error("Erreur lors de la r\u00e9cup\u00e9ration du profil")
         }
 
         const data = await res.json()
@@ -187,7 +187,6 @@ export default function PatientProfilePage() {
   }
 
   const handleSaveProfile = () => {
-    // TODO: Add API call to persist changes
     console.log("Saving profile:", profile)
     setIsEditing(false)
   }
@@ -202,7 +201,7 @@ export default function PatientProfilePage() {
 
   return (
     <div className="flex min-h-screen bg-slate-50">
-      <Sidebar userType="patient" />
+      <Sidebar />
 
       <div className="flex-1 p-8">
         <div className="max-w-5xl mx-auto">

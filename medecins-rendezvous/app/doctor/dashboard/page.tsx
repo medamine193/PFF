@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Calendar, Clock, FileText, MessageSquare, User } from "lucide-react"
 import Sidebar from "@/components/Sidebar"
 import { jwtDecode } from "jwt-decode"
+import ProtectedRoute from "@/components/ProtectedRoute"
 
 type Appointment = {
   id: number
@@ -49,8 +50,9 @@ export default function DoctorDashboardPage() {
   const upcomingAppointments = appointments.filter(a => a.date > today)
 
   return (
+    <ProtectedRoute allowedRoles={["doctor"]}>
     <div className="flex min-h-screen bg-slate-50">
-      <Sidebar userType="doctor" />
+      <Sidebar  />
 
       <div className="flex-1 p-8">
         <div className="max-w-6xl mx-auto">
@@ -222,5 +224,6 @@ export default function DoctorDashboardPage() {
         </div>
       </div>
     </div>
+    </ProtectedRoute>
   )
 }

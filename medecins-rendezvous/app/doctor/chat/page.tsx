@@ -12,6 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import ChatBox from "@/components/ChatBox"
 import Sidebar from "@/components/Sidebar"
+import ProtectedRoute from "@/components/ProtectedRoute"
 
 // Mock data for patients
 const patients = [
@@ -146,8 +147,9 @@ export default function DoctorChatPage() {
   }
 
   return (
+    <ProtectedRoute allowedRoles={["doctor"]}>
     <div className="flex min-h-screen bg-gray-50">
-      <Sidebar userType="doctor" />
+      <Sidebar  />
 
       <div className="flex-1 ml-[70px] md:ml-64">
         <div className="container mx-auto p-4">
@@ -303,5 +305,6 @@ export default function DoctorChatPage() {
         </div>
       </div>
     </div>
+    </ProtectedRoute>
   )
 }

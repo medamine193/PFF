@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar, Clock, Search } from "lucide-react"
 import Sidebar from "@/components/Sidebar"
 import { jwtDecode } from "jwt-decode"
+import ProtectedRoute from "@/components/ProtectedRoute"
 
 interface Patient {
   id: string
@@ -74,8 +75,9 @@ export default function DoctorAppointmentsPage() {
   const cancelledAppointments = filteredAppointments.filter((a) => a.status === "cancelled")
 
   return (
+    <ProtectedRoute allowedRoles={["doctor"]}>
     <div className="flex min-h-screen bg-slate-50">
-      <Sidebar userType="doctor" />
+      <Sidebar />
       <div className="flex-1 p-8">
         <div className="max-w-6xl mx-auto">
           <header className="flex items-center justify-between mb-8">
@@ -204,5 +206,6 @@ export default function DoctorAppointmentsPage() {
         </div>
       </div>
     </div>
+    </ProtectedRoute>
   )
 }
