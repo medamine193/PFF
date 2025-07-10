@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Calendar, Plus, Search } from "lucide-react"
 import Link from "next/link"
+import ProtectedRoute from "@/components/ProtectedRoute"
+
 
 interface Doctor {
   name: string
@@ -117,6 +119,7 @@ export default function PatientAppointmentsPage() {
   }
 
   return (
+            <ProtectedRoute allowedRoles={["patient"]}>
     <div className="flex min-h-screen bg-slate-50">
       <Sidebar userType="patient" />
 
@@ -204,6 +207,7 @@ export default function PatientAppointmentsPage() {
         </div>
       </div>
     </div>
+     </ProtectedRoute>
   )
 }
 
@@ -217,5 +221,7 @@ function EmptyMessage() {
         <Link href="/patient/book">Prendre rendez-vous</Link>
       </Button>
     </div>
+       
+    
   )
 }

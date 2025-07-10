@@ -11,6 +11,9 @@ import { Calendar, MapPin, Search, Video } from "lucide-react"
 import Sidebar from "@/components/Sidebar"
 import DoctorCard from "@/components/DoctorCard"
 import axios from "axios"
+import { jwtDecode } from "jwt-decode"
+import ProtectedRoute from "@/components/ProtectedRoute"
+
 
 
 
@@ -104,18 +107,46 @@ const [doctors, setDoctors] = useState<Doctor[]>([])
     setSelectedSlot(slot)
   }
 
-  const handleConfirmBooking = () => {
-    console.log("Booking confirmed:", {
-      doctorId: selectedDoctor,
-      date: selectedDate,
-      time: selectedSlot,
-      type: consultationType,
-    })
+  const handleConfirmBooking = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("Token manquant");
+      return;
+    }
 
-    setBookingStep(3)
+    const decoded: any = jwtDecode(token);
+    const patientId = decoded.sub;
+
+    await axios.post(
+      "http://localhost:3000/appointments",
+      {
+        patientId,
+        doctorId: selectedDoctor,
+        date: selectedDate,
+        time: selectedSlot,
+        type: consultationType === "video" ? "Téléconsultation" : "Au cabinet",
+        status: "confirmed", // on enregistre comme confirmé
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    console.log("Rendez-vous enregistré avec succès");
+    setBookingStep(3);
+  } catch (error) {
+    console.error("Erreur lors de l'enregistrement :", error);
+    alert("Une erreur s’est produite lors de la prise de rendez-vous.");
   }
+};
+
 
   return (
+        <ProtectedRoute allowedRoles={["patient"]}>
+    
     <div className="flex min-h-screen bg-slate-50">
       <Sidebar userType="patient" />
       <div className="flex-1 p-8">
@@ -337,5 +368,7 @@ const [doctors, setDoctors] = useState<Doctor[]>([])
         </div>
       </div>
     </div>
+        </ProtectedRoute>
+    
   )
 }

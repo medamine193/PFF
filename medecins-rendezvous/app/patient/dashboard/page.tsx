@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Calendar, Clock, FileText, MessageSquare, Plus, User } from "lucide-react"
 import Sidebar from "@/components/Sidebar"
 import AppointmentCard from "@/components/AppointmentCard"
+import ProtectedRoute from "@/components/ProtectedRoute"
+
 
 // Mock data for upcoming appointments
 const upcomingAppointments = [
@@ -74,6 +76,7 @@ const patient = {
 
 export default function PatientDashboardPage() {
   return (
+    <ProtectedRoute allowedRoles={["patient"]}>
     <div className="flex min-h-screen bg-slate-50">
       <Sidebar userType="patient" />
 
@@ -330,5 +333,6 @@ export default function PatientDashboardPage() {
         </div>
       </div>
     </div>
+    </ProtectedRoute>
   )
 }

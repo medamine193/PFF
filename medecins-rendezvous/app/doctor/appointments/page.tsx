@@ -1,6 +1,8 @@
+// DoctorAppointmentsPage.tsx
+
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -9,125 +11,46 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Calendar, Clock, Search } from "lucide-react"
 import Sidebar from "@/components/Sidebar"
+import { jwtDecode } from "jwt-decode"
 
-// Mock data for appointments
-const allAppointments = [
-  {
-    id: 1,
-    patient: {
-      name: "Jean Dupont",
-      age: 45,
-      image: "/placeholder.svg?height=100&width=100",
-    },
-    date: "15 Juin 2023",
-    time: "09:00",
-    type: "Au cabinet",
-    status: "confirmed",
-    reason: "Consultation de routine",
-  },
-  {
-    id: 2,
-    patient: {
-      name: "Marie Lambert",
-      age: 32,
-      image: "/placeholder.svg?height=100&width=100",
-    },
-    date: "15 Juin 2023",
-    time: "10:30",
-    type: "Téléconsultation",
-    status: "confirmed",
-    reason: "Suivi traitement",
-  },
-  {
-    id: 3,
-    patient: {
-      name: "Pierre Martin",
-      age: 58,
-      image: "/placeholder.svg?height=100&width=100",
-    },
-    date: "15 Juin 2023",
-    time: "14:00",
-    type: "Au cabinet",
-    status: "confirmed",
-    reason: "Douleurs lombaires",
-  },
-  {
-    id: 4,
-    patient: {
-      name: "Sophie Moreau",
-      age: 29,
-      image: "/placeholder.svg?height=100&width=100",
-    },
-    date: "16 Juin 2023",
-    time: "11:00",
-    type: "Au cabinet",
-    status: "confirmed",
-    reason: "Consultation de routine",
-  },
-  {
-    id: 5,
-    patient: {
-      name: "Lucas Bernard",
-      age: 41,
-      image: "/placeholder.svg?height=100&width=100",
-    },
-    date: "22 Juin 2023",
-    time: "15:30",
-    type: "Téléconsultation",
-    status: "confirmed",
-    reason: "Renouvellement ordonnance",
-  },
-  {
-    id: 6,
-    patient: {
-      name: "Emma Petit",
-      age: 27,
-      image: "/placeholder.svg?height=100&width=100",
-    },
-    date: "5 Mai 2023",
-    time: "09:30",
-    type: "Au cabinet",
-    status: "completed",
-    reason: "Consultation de routine",
-    notes: "Patient en bonne santé générale. Tension artérielle normale. Prescription de vitamines.",
-  },
-  {
-    id: 7,
-    patient: {
-      name: "Thomas Leroy",
-      age: 52,
-      image: "/placeholder.svg?height=100&width=100",
-    },
-    date: "2 Mai 2023",
-    time: "14:00",
-    type: "Au cabinet",
-    status: "completed",
-    reason: "Douleurs articulaires",
-    notes: "Arthrose du genou droit. Prescription d'anti-inflammatoires et recommandation de kinésithérapie.",
-  },
-  {
-    id: 8,
-    patient: {
-      name: "Julie Moreau",
-      age: 35,
-      image: "/placeholder.svg?height=100&width=100",
-    },
-    date: "15 Juin 2023",
-    time: "16:30",
-    type: "Au cabinet",
-    status: "cancelled",
-    reason: "Consultation de routine",
-  },
-]
+interface Patient {
+  id: string
+  name: string
+  age: number
+  image?: string
+}
+
+interface Appointment {
+  id: number
+  patient: Patient
+  doctorId: string
+  date: string
+  time: string
+  type: string
+  status: string
+  reason: string
+  notes?: string
+}
 
 export default function DoctorAppointmentsPage() {
+  const [appointments, setAppointments] = useState<Appointment[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [typeFilter, setTypeFilter] = useState("all")
-  const [selectedAppointment, setSelectedAppointment] = useState<any>(null)
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
 
-  // Filter appointments based on search and filters
-  const filteredAppointments = allAppointments.filter((appointment) => {
+  useEffect(() => {
+    const token = localStorage.getItem("token")
+    if (!token) return
+    const decoded: any = jwtDecode(token)
+    const doctorId = decoded.userId
+
+    fetch(`http://localhost:3001/appointments/doctor/${doctorId}`)
+      .then(res => res.json())
+      .then(data => setAppointments(data))
+  }, [])
+
+  const filteredAppointments = appointments.filter((appointment) => {
     const matchesSearch =
       appointment.patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       appointment.reason.toLowerCase().includes(searchTerm.toLowerCase())
@@ -137,8 +60,7 @@ export default function DoctorAppointmentsPage() {
     return matchesSearch && matchesStatus && matchesType
   })
 
-  // Group appointments by date
-  const groupedAppointments = filteredAppointments.reduce((groups: any, appointment) => {
+  const groupedAppointments = filteredAppointments.reduce((groups: Record<string, Appointment[]>, appointment) => {
     const date = appointment.date
     if (!groups[date]) {
       groups[date] = []
@@ -147,7 +69,6 @@ export default function DoctorAppointmentsPage() {
     return groups
   }, {})
 
-  // Separate appointments by status
   const upcomingAppointments = filteredAppointments.filter((a) => a.status === "confirmed")
   const completedAppointments = filteredAppointments.filter((a) => a.status === "completed")
   const cancelledAppointments = filteredAppointments.filter((a) => a.status === "cancelled")
@@ -155,7 +76,6 @@ export default function DoctorAppointmentsPage() {
   return (
     <div className="flex min-h-screen bg-slate-50">
       <Sidebar userType="doctor" />
-
       <div className="flex-1 p-8">
         <div className="max-w-6xl mx-auto">
           <header className="flex items-center justify-between mb-8">
@@ -180,7 +100,6 @@ export default function DoctorAppointmentsPage() {
                         onChange={(e) => setSearchTerm(e.target.value)}
                       />
                     </div>
-
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
                       <SelectTrigger>
                         <SelectValue placeholder="Statut" />
@@ -192,7 +111,6 @@ export default function DoctorAppointmentsPage() {
                         <SelectItem value="cancelled">Annulés</SelectItem>
                       </SelectContent>
                     </Select>
-
                     <Select value={typeFilter} onValueChange={setTypeFilter}>
                       <SelectTrigger>
                         <SelectValue placeholder="Type de consultation" />
@@ -209,166 +127,41 @@ export default function DoctorAppointmentsPage() {
 
               <Tabs defaultValue="upcoming">
                 <TabsList className="mb-6">
-                  <TabsTrigger value="upcoming">À venir ({upcomingAppointments.length})</TabsTrigger>
+                  <TabsTrigger value="upcoming">A venir ({upcomingAppointments.length})</TabsTrigger>
                   <TabsTrigger value="completed">Terminés ({completedAppointments.length})</TabsTrigger>
                   <TabsTrigger value="cancelled">Annulés ({cancelledAppointments.length})</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="upcoming">
-                  {Object.keys(groupedAppointments).length > 0 ? (
-                    Object.entries(groupedAppointments)
-                      .filter(([_, appointments]) => (appointments as any[]).some((a) => a.status === "confirmed"))
-                      .sort(([dateA], [dateB]) => new Date(dateA).getTime() - new Date(dateB).getTime())
-                      .map(([date, appointments]) => (
-                        <div key={date} className="mb-6">
-                          <h3 className="text-lg font-medium mb-4">{date}</h3>
-                          <div className="space-y-4">
-                            {(appointments as any[])
-                              .filter((a) => a.status === "confirmed")
-                              .sort((a, b) => a.time.localeCompare(b.time))
-                              .map((appointment) => (
-                                <div
-                                  key={appointment.id}
-                                  className={`flex items-center p-4 border rounded-lg cursor-pointer hover:bg-slate-50 ${selectedAppointment?.id === appointment.id ? "bg-slate-50 border-blue-200" : ""}`}
-                                  onClick={() => setSelectedAppointment(appointment)}
-                                >
-                                  <div className="w-12 h-12 rounded-full overflow-hidden mr-4">
-                                    <Image
-                                      src={appointment.patient.image || "/placeholder.svg"}
-                                      alt={appointment.patient.name}
-                                      width={48}
-                                      height={48}
-                                      className="object-cover"
-                                    />
-                                  </div>
-                                  <div className="flex-1">
-                                    <div className="flex items-center">
-                                      <h3 className="font-medium">{appointment.patient.name}</h3>
-                                      <span className="text-sm text-muted-foreground ml-2">
-                                        ({appointment.patient.age} ans)
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center text-sm text-muted-foreground">
-                                      <Clock className="h-3 w-3 mr-1" />
-                                      <span>{appointment.time}</span>
-                                      <span className="mx-2">•</span>
-                                      <span>{appointment.type}</span>
-                                    </div>
-                                    <p className="text-sm">{appointment.reason}</p>
-                                  </div>
-                                  <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                                    Commencer
-                                  </Button>
+                  {Object.entries(groupedAppointments)
+                    .filter(([_, group]) => (group as Appointment[]).some((a: Appointment) => a.status === "confirmed"))
+                    .sort(([dateA], [dateB]) => new Date(dateA).getTime() - new Date(dateB).getTime())
+                    .map(([date, group]) => (
+                      <div key={date} className="mb-6">
+                        <h3 className="text-lg font-medium mb-4">{date}</h3>
+                        <div className="space-y-4">
+                          {(group as Appointment[])
+                            .filter((a: Appointment) => a.status === "confirmed")
+                            .map((appointment: Appointment) => (
+                              <div key={appointment.id} className="flex items-center p-4 border rounded-lg">
+                                <div className="w-12 h-12 rounded-full overflow-hidden mr-4">
+                                  <Image
+                                    src={appointment.patient.image || "/placeholder.svg"}
+                                    alt={appointment.patient.name}
+                                    width={48}
+                                    height={48}
+                                    className="object-cover"
+                                  />
                                 </div>
-                              ))}
-                          </div>
+                                <div className="flex-1">
+                                  <h3 className="font-medium">{appointment.patient.name}</h3>
+                                  <p className="text-sm">{appointment.time} - {appointment.reason}</p>
+                                </div>
+                              </div>
+                            ))}
                         </div>
-                      ))
-                  ) : (
-                    <div className="text-center py-12 bg-white rounded-lg border">
-                      <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-medium mb-2">Aucun rendez-vous à venir</h3>
-                      <p className="text-muted-foreground mb-4">
-                        Vous n'avez pas de rendez-vous planifiés pour le moment
-                      </p>
-                    </div>
-                  )}
-                </TabsContent>
-
-                <TabsContent value="completed">
-                  {completedAppointments.length > 0 ? (
-                    <div className="space-y-4">
-                      {completedAppointments.map((appointment) => (
-                        <div
-                          key={appointment.id}
-                          className={`flex items-center p-4 border rounded-lg cursor-pointer hover:bg-slate-50 ${selectedAppointment?.id === appointment.id ? "bg-slate-50 border-blue-200" : ""}`}
-                          onClick={() => setSelectedAppointment(appointment)}
-                        >
-                          <div className="w-12 h-12 rounded-full overflow-hidden mr-4">
-                            <Image
-                              src={appointment.patient.image || "/placeholder.svg"}
-                              alt={appointment.patient.name}
-                              width={48}
-                              height={48}
-                              className="object-cover"
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center">
-                              <h3 className="font-medium">{appointment.patient.name}</h3>
-                              <span className="text-sm text-muted-foreground ml-2">
-                                ({appointment.patient.age} ans)
-                              </span>
-                            </div>
-                            <div className="flex items-center text-sm text-muted-foreground">
-                              <Calendar className="h-3 w-3 mr-1" />
-                              <span>{appointment.date}</span>
-                              <span className="mx-2">•</span>
-                              <Clock className="h-3 w-3 mr-1" />
-                              <span>{appointment.time}</span>
-                            </div>
-                            <p className="text-sm">{appointment.reason}</p>
-                          </div>
-                          <Button variant="outline" size="sm">
-                            Voir détails
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12 bg-white rounded-lg border">
-                      <h3 className="text-lg font-medium mb-2">Aucun rendez-vous terminé</h3>
-                      <p className="text-muted-foreground">Votre historique de consultations apparaîtra ici</p>
-                    </div>
-                  )}
-                </TabsContent>
-
-                <TabsContent value="cancelled">
-                  {cancelledAppointments.length > 0 ? (
-                    <div className="space-y-4">
-                      {cancelledAppointments.map((appointment) => (
-                        <div
-                          key={appointment.id}
-                          className={`flex items-center p-4 border rounded-lg cursor-pointer hover:bg-slate-50 ${selectedAppointment?.id === appointment.id ? "bg-slate-50 border-blue-200" : ""}`}
-                          onClick={() => setSelectedAppointment(appointment)}
-                        >
-                          <div className="w-12 h-12 rounded-full overflow-hidden mr-4">
-                            <Image
-                              src={appointment.patient.image || "/placeholder.svg"}
-                              alt={appointment.patient.name}
-                              width={48}
-                              height={48}
-                              className="object-cover"
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center">
-                              <h3 className="font-medium">{appointment.patient.name}</h3>
-                              <span className="text-sm text-muted-foreground ml-2">
-                                ({appointment.patient.age} ans)
-                              </span>
-                            </div>
-                            <div className="flex items-center text-sm text-muted-foreground">
-                              <Calendar className="h-3 w-3 mr-1" />
-                              <span>{appointment.date}</span>
-                              <span className="mx-2">•</span>
-                              <Clock className="h-3 w-3 mr-1" />
-                              <span>{appointment.time}</span>
-                            </div>
-                            <p className="text-sm">{appointment.reason}</p>
-                          </div>
-                          <Button variant="outline" size="sm">
-                            Voir détails
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12 bg-white rounded-lg border">
-                      <h3 className="text-lg font-medium mb-2">Aucun rendez-vous annulé</h3>
-                      <p className="text-muted-foreground">Les rendez-vous annulés apparaîtront ici</p>
-                    </div>
-                  )}
+                      </div>
+                    ))}
                 </TabsContent>
               </Tabs>
             </div>
@@ -392,79 +185,18 @@ export default function DoctorAppointmentsPage() {
                         <p className="text-muted-foreground">{selectedAppointment.patient.age} ans</p>
                       </div>
                     </div>
-
-                    <div className="space-y-4 mb-6">
-                      <div className="grid grid-cols-2 gap-2 p-3 bg-slate-50 rounded-md">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Date</p>
-                          <p className="font-medium">{selectedAppointment.date}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Heure</p>
-                          <p className="font-medium">{selectedAppointment.time}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Type</p>
-                          <p className="font-medium">{selectedAppointment.type}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Statut</p>
-                          <p className="font-medium capitalize">
-                            {selectedAppointment.status === "confirmed"
-                              ? "Confirmé"
-                              : selectedAppointment.status === "completed"
-                                ? "Terminé"
-                                : "Annulé"}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div>
-                        <p className="text-sm text-muted-foreground mb-1">Motif de consultation</p>
-                        <p>{selectedAppointment.reason}</p>
-                      </div>
-
-                      {selectedAppointment.notes && (
-                        <div>
-                          <p className="text-sm text-muted-foreground mb-1">Notes</p>
-                          <p>{selectedAppointment.notes}</p>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      {selectedAppointment.status === "confirmed" && (
-                        <>
-                          <Button className="w-full bg-blue-600 hover:bg-blue-700">Commencer la consultation</Button>
-                          <Button variant="outline" className="w-full">
-                            Reprogrammer
-                          </Button>
-                          <Button variant="outline" className="w-full text-red-600 hover:text-red-700 hover:bg-red-50">
-                            Annuler le rendez-vous
-                          </Button>
-                        </>
-                      )}
-
-                      {selectedAppointment.status === "completed" && (
-                        <>
-                          <Button className="w-full">Voir le dossier médical</Button>
-                          <Button variant="outline" className="w-full">
-                            Envoyer un message
-                          </Button>
-                        </>
-                      )}
-
-                      {selectedAppointment.status === "cancelled" && <Button className="w-full">Reprogrammer</Button>}
-                    </div>
+                    <p>Date : {selectedAppointment.date}</p>
+                    <p>Heure : {selectedAppointment.time}</p>
+                    <p>Type : {selectedAppointment.type}</p>
+                    <p>Statut : {selectedAppointment.status}</p>
+                    <p>Motif : {selectedAppointment.reason}</p>
                   </CardContent>
                 </Card>
               ) : (
-                <div className="h-full flex items-center justify-center p-8 text-center border rounded-lg bg-white">
-                  <div>
-                    <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-medium mb-2">Détails du rendez-vous</h3>
-                    <p className="text-muted-foreground">Sélectionnez un rendez-vous pour voir les détails</p>
-                  </div>
+                <div className="p-6 bg-white border rounded-lg text-center">
+                  <Calendar className="mx-auto mb-4 w-12 h-12 text-muted-foreground" />
+                  <h3 className="text-lg font-medium">Détails du rendez-vous</h3>
+                  <p className="text-muted-foreground">Sélectionnez un rendez-vous pour voir les détails</p>
                 </div>
               )}
             </div>

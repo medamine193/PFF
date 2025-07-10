@@ -1,59 +1,154 @@
-"use client"
+'use client'
 
-import type React from "react"
-
-import { useState } from "react"
+import React, { useEffect, useState } from "react"
+import { jwtDecode } from "jwt-decode"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
-import { Camera, FileText, Lock, Mail, Phone, Save, User } from "lucide-react"
+import {
+  Camera,
+  FileText,
+  Lock,
+  Mail,
+  Phone,
+  Save,
+  User,
+} from "lucide-react"
 import Sidebar from "@/components/Sidebar"
 
-// Mock patient data
-const patientData = {
-  id: 1,
-  firstName: "Jean",
-  lastName: "Dupont",
-  email: "jean.dupont@example.com",
-  phone: "+33 6 12 34 56 78",
-  birthDate: "1985-06-15",
-  gender: "male",
-  address: "123 Rue de Paris, 75001 Paris",
-  bloodType: "A+",
-  allergies: "Pénicilline",
-  chronicConditions: "Hypertension",
-  currentMedications: "Lisinopril 10mg",
+type PatientProfile = {
+  id: number
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  birthDate: string
+  gender: string
+  address: string
+  bloodType: string
+  allergies: string
+  chronicConditions: string
+  currentMedications: string
   emergencyContact: {
-    name: "Marie Dupont",
-    relationship: "Épouse",
-    phone: "+33 6 98 76 54 32",
-  },
-  image: "/placeholder.svg?height=200&width=200",
-  documents: [
-    { id: 1, name: "Ordonnance_20230505.pdf", date: "05/05/2023", type: "Ordonnance" },
-    { id: 2, name: "Analyse_sang_20230420.pdf", date: "20/04/2023", type: "Analyse" },
-    { id: 3, name: "Radiographie_20230315.pdf", date: "15/03/2023", type: "Radiographie" },
-  ],
+    name: string
+    relationship: string
+    phone: string
+  }
+  image?: string
+  documents: {
+    id: number
+    name: string
+    date: string
+    type: string
+  }[]
   notifications: {
-    email: true,
-    sms: true,
-    appointments: true,
-    reminders: true,
+    email: boolean
+    sms: boolean
+    appointments: boolean
+    reminders: boolean
+    marketing: boolean
+  }
+}
+
+const defaultProfile: PatientProfile = {
+  id: 0,
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  birthDate: "",
+  gender: "",
+  address: "",
+  bloodType: "",
+  allergies: "",
+  chronicConditions: "",
+  currentMedications: "",
+  emergencyContact: {
+    name: "",
+    relationship: "",
+    phone: "",
+  },
+  image: "",
+  documents: [],
+  notifications: {
+    email: false,
+    sms: false,
+    appointments: false,
+    reminders: false,
     marketing: false,
   },
 }
 
 export default function PatientProfilePage() {
-  const [profile, setProfile] = useState(patientData)
+  const [profile, setProfile] = useState<PatientProfile>(defaultProfile)
   const [isEditing, setIsEditing] = useState(false)
+  const [loading, setLoading] = useState(true)
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const token = localStorage.getItem("token")
+      if (!token) {
+        setLoading(false)
+        return
+      }
+
+      try {
+        const decoded: any = jwtDecode(token)
+        const patientId = decoded?.id
+
+        if (!patientId) {
+          setLoading(false)
+          return
+        }
+
+        const res = await fetch(`http://localhost:3000/patients/${patientId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+
+        if (!res.ok) {
+          throw new Error("Erreur lors de la récupération du profil")
+        }
+
+        const data = await res.json()
+        setProfile(data)
+      } catch (err) {
+        console.error("Erreur de chargement du profil :", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProfile()
+  }, [])
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target
     setProfile((prev) => ({
       ...prev,
@@ -78,7 +173,9 @@ export default function PatientProfilePage() {
     }))
   }
 
-  const handleEmergencyContactChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleEmergencyContactChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const { name, value } = e.target
     setProfile((prev) => ({
       ...prev,
@@ -90,9 +187,17 @@ export default function PatientProfilePage() {
   }
 
   const handleSaveProfile = () => {
-    // In a real app, this would make an API call to update the profile
+    // TODO: Add API call to persist changes
     console.log("Saving profile:", profile)
     setIsEditing(false)
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen text-lg">
+        Chargement du profil...
+      </div>
+    )
   }
 
   return (
@@ -104,14 +209,19 @@ export default function PatientProfilePage() {
           <header className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-3xl font-bold">Mon profil</h1>
-              <p className="text-muted-foreground">Gérez vos informations personnelles et médicales</p>
+              <p className="text-muted-foreground">
+                Gérez vos informations personnelles et médicales
+              </p>
             </div>
             {isEditing ? (
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setIsEditing(false)}>
                   Annuler
                 </Button>
-                <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleSaveProfile}>
+                <Button
+                  className="bg-blue-600 hover:bg-blue-700"
+                  onClick={handleSaveProfile}
+                >
                   <Save className="h-4 w-4 mr-2" />
                   Enregistrer
                 </Button>
@@ -133,7 +243,9 @@ export default function PatientProfilePage() {
               <Card>
                 <CardHeader>
                   <CardTitle>Informations personnelles</CardTitle>
-                  <CardDescription>Vos informations de contact et détails personnels</CardDescription>
+                  <CardDescription>
+                    Vos informations de contact et détails personnels
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6 mb-6">
@@ -149,7 +261,11 @@ export default function PatientProfilePage() {
                       </div>
                       {isEditing && (
                         <div className="absolute bottom-0 right-0">
-                          <Button size="icon" variant="outline" className="rounded-full bg-white h-8 w-8">
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="rounded-full bg-white h-8 w-8"
+                          >
                             <Camera className="h-4 w-4" />
                           </Button>
                         </div>
@@ -310,7 +426,9 @@ export default function PatientProfilePage() {
               <Card>
                 <CardHeader>
                   <CardTitle>Informations médicales</CardTitle>
-                  <CardDescription>Vos antécédents médicaux et informations de santé</CardDescription>
+                  <CardDescription>
+                    Vos antécédents médicaux et informations de santé
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -318,7 +436,9 @@ export default function PatientProfilePage() {
                       <Label htmlFor="bloodType">Groupe sanguin</Label>
                       <Select
                         value={profile.bloodType}
-                        onValueChange={(value) => handleSelectChange("bloodType", value)}
+                        onValueChange={(value) =>
+                          handleSelectChange("bloodType", value)
+                        }
                         disabled={!isEditing}
                       >
                         <SelectTrigger>
@@ -381,7 +501,9 @@ export default function PatientProfilePage() {
               <Card>
                 <CardHeader>
                   <CardTitle>Documents médicaux</CardTitle>
-                  <CardDescription>Vos ordonnances, résultats d'analyses et autres documents médicaux</CardDescription>
+                  <CardDescription>
+                    Vos ordonnances, résultats d'analyses et autres documents médicaux
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="mb-6">
@@ -393,7 +515,10 @@ export default function PatientProfilePage() {
 
                   <div className="space-y-4">
                     {profile.documents.map((doc) => (
-                      <div key={doc.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div
+                        key={doc.id}
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                      >
                         <div className="flex items-center">
                           <FileText className="h-6 w-6 text-blue-600 mr-3" />
                           <div>
@@ -425,17 +550,23 @@ export default function PatientProfilePage() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Notifications</CardTitle>
-                    <CardDescription>Gérez vos préférences de notifications</CardDescription>
+                    <CardDescription>
+                      Gérez vos préférences de notifications
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="font-medium">Notifications par email</p>
-                        <p className="text-sm text-muted-foreground">Recevoir des notifications par email</p>
+                        <p className="text-sm text-muted-foreground">
+                          Recevoir des notifications par email
+                        </p>
                       </div>
                       <Switch
                         checked={profile.notifications.email}
-                        onCheckedChange={(checked) => handleNotificationChange("email", checked)}
+                        onCheckedChange={(checked) =>
+                          handleNotificationChange("email", checked)
+                        }
                         disabled={!isEditing}
                       />
                     </div>
@@ -443,11 +574,15 @@ export default function PatientProfilePage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="font-medium">Notifications par SMS</p>
-                        <p className="text-sm text-muted-foreground">Recevoir des notifications par SMS</p>
+                        <p className="text-sm text-muted-foreground">
+                          Recevoir des notifications par SMS
+                        </p>
                       </div>
                       <Switch
                         checked={profile.notifications.sms}
-                        onCheckedChange={(checked) => handleNotificationChange("sms", checked)}
+                        onCheckedChange={(checked) =>
+                          handleNotificationChange("sms", checked)
+                        }
                         disabled={!isEditing}
                       />
                     </div>
@@ -455,11 +590,15 @@ export default function PatientProfilePage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="font-medium">Rappels de rendez-vous</p>
-                        <p className="text-sm text-muted-foreground">Recevoir des rappels pour vos rendez-vous</p>
+                        <p className="text-sm text-muted-foreground">
+                          Recevoir des rappels pour vos rendez-vous
+                        </p>
                       </div>
                       <Switch
                         checked={profile.notifications.reminders}
-                        onCheckedChange={(checked) => handleNotificationChange("reminders", checked)}
+                        onCheckedChange={(checked) =>
+                          handleNotificationChange("reminders", checked)
+                        }
                         disabled={!isEditing}
                       />
                     </div>
@@ -467,11 +606,15 @@ export default function PatientProfilePage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="font-medium">Communications marketing</p>
-                        <p className="text-sm text-muted-foreground">Recevoir des offres et actualités</p>
+                        <p className="text-sm text-muted-foreground">
+                          Recevoir des offres et actualités
+                        </p>
                       </div>
                       <Switch
                         checked={profile.notifications.marketing}
-                        onCheckedChange={(checked) => handleNotificationChange("marketing", checked)}
+                        onCheckedChange={(checked) =>
+                          handleNotificationChange("marketing", checked)
+                        }
                         disabled={!isEditing}
                       />
                     </div>
@@ -481,14 +624,21 @@ export default function PatientProfilePage() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Sécurité</CardTitle>
-                    <CardDescription>Gérez vos paramètres de sécurité et de confidentialité</CardDescription>
+                    <CardDescription>
+                      Gérez vos paramètres de sécurité et de confidentialité
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <div className="space-y-2">
                       <Label htmlFor="currentPassword">Mot de passe actuel</Label>
                       <div className="relative">
                         <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input id="currentPassword" type="password" className="pl-10" disabled={!isEditing} />
+                        <Input
+                          id="currentPassword"
+                          type="password"
+                          className="pl-10"
+                          disabled={!isEditing}
+                        />
                       </div>
                     </div>
 
@@ -496,7 +646,12 @@ export default function PatientProfilePage() {
                       <Label htmlFor="newPassword">Nouveau mot de passe</Label>
                       <div className="relative">
                         <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input id="newPassword" type="password" className="pl-10" disabled={!isEditing} />
+                        <Input
+                          id="newPassword"
+                          type="password"
+                          className="pl-10"
+                          disabled={!isEditing}
+                        />
                       </div>
                     </div>
 
@@ -504,11 +659,18 @@ export default function PatientProfilePage() {
                       <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
                       <div className="relative">
                         <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input id="confirmPassword" type="password" className="pl-10" disabled={!isEditing} />
+                        <Input
+                          id="confirmPassword"
+                          type="password"
+                          className="pl-10"
+                          disabled={!isEditing}
+                        />
                       </div>
                     </div>
 
-                    {isEditing && <Button className="w-full">Mettre à jour le mot de passe</Button>}
+                    {isEditing && (
+                      <Button className="w-full">Mettre à jour le mot de passe</Button>
+                    )}
 
                     <div className="pt-4">
                       <h3 className="text-lg font-medium mb-2">Actions du compte</h3>

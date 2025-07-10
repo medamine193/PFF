@@ -56,12 +56,14 @@ export default function AppointmentCard({ appointment, actions = [] }: Appointme
           {/* Doctor Info */}
           <div className="flex items-center gap-4 flex-1">
             <div className="relative h-16 w-16 rounded-full overflow-hidden border">
-              <Image
-                src={doctor.image || "/placeholder.svg"}
-                alt={doctor.name}
-                fill
-                className="object-cover"
-              />
+             <Image
+  src={appointment.doctor.image || "/placeholder.svg"}
+  alt={`Photo de ${appointment.doctor.name}`}
+  width={48}
+  height={48}
+  className="rounded-full"
+/>
+
             </div>
             <div>
               <h3 className="font-medium text-lg">{doctor.name}</h3>

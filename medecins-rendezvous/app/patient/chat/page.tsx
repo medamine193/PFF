@@ -8,6 +8,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Paperclip, Send } from "lucide-react"
 import Sidebar from "@/components/Sidebar"
 import ChatBox from "@/components/ChatBox"
+import ProtectedRoute from "@/components/ProtectedRoute"
+
 
 // Mock data for conversations
 const mockConversations = [
